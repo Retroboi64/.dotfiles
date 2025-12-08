@@ -65,6 +65,8 @@ require('lazy').setup({
             ["<C-t>"] = { "actions.select", opts = { tab = true }},
             ["g?"] = "actions.show_help",
 
+            -- TODO
+            ["~"] = {"actions.cd", mode="n"},
             ["<Esc>"] = "actions.close",
             ["<BS>"] = "actions.parent",
             ["g."] = "actions.toggle_hidden",
