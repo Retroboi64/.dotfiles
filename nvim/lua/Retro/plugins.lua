@@ -112,7 +112,7 @@ require('lazy').setup({
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
-        ensure_installed = { 'c', 'cpp', 'cmake', 'make', 'lua', 'vim', 'glsl', 'json', 'yaml' },
+        ensure_installed = { 'c', 'cpp', 'cmake', 'make', 'lua', 'vim', 'glsl', 'json', 'yaml', 'rust', 'toml' },
         auto_install = true,
         highlight = {
           enable = true,
@@ -144,7 +144,7 @@ require('lazy').setup({
       require('mason').setup()
       require('neodev').setup()
       require('mason-lspconfig').setup({
-        ensure_installed = { 'clangd', 'cmake', 'lua_ls' },
+        ensure_installed = { 'clangd', 'cmake', 'lua_ls', 'rust_analyzer' },
         automatic_installation = true,
       })
 
@@ -187,9 +187,39 @@ require('lazy').setup({
         },
       })
 
+      vim.lsp.config('rust_analyzer', {
+        capabilities = capabilities,
+        settings = {
+          ['rust-analyzer'] = {
+            cargo = {
+              allFeatures = true,
+              loadOutDirsFromCheck = true,
+              buildScripts = {
+                enable = true,
+              },
+            },
+            checkOnSave = {
+              command = 'clippy',
+            },
+            procMacro = {
+              enable = true,
+            },
+            inlayHints = {
+              enable = true,
+              chainingHints = { enable = true },
+              closureReturnTypeHints = { enable = 'always' },
+              lifetimeElisionHints = { enable = 'always', useParameterNames = true },
+              parameterHints = { enable = true },
+              typeHints = { enable = true },
+            },
+          },
+        },
+      })
+
       vim.lsp.enable('clangd')
       vim.lsp.enable('cmake')
       vim.lsp.enable('lua_ls')
+      vim.lsp.enable('rust_analyzer')
     end,
   },
 
@@ -353,6 +383,48 @@ require('lazy').setup({
     'octol/vim-cpp-enhanced-highlight',
   },
 
+  -- Rust development
+  {
+    'mrcjkb/rustaceanvim',
+    version = '^5',
+    lazy = false,
+    ft = { 'rust' },
+    config = function()
+      vim.g.rustaceanvim = {
+        server = {
+          on_attach = function(client, bufnr)
+            -- Keymaps specific to Rust
+            local opts = { buffer = bufnr, noremap = true, silent = true }
+            vim.keymap.set('n', '<leader>rr', ':RustLsp runnables<CR>', opts)
+            vim.keymap.set('n', '<leader>rd', ':RustLsp debuggables<CR>', opts)
+            vim.keymap.set('n', '<leader>rt', ':RustLsp testables<CR>', opts)
+            vim.keymap.set('n', '<leader>re', ':RustLsp expandMacro<CR>', opts)
+            vim.keymap.set('n', '<leader>rc', ':RustLsp openCargo<CR>', opts)
+            vim.keymap.set('n', '<leader>rp', ':RustLsp parentModule<CR>', opts)
+            vim.keymap.set('n', '<leader>rj', ':RustLsp joinLines<CR>', opts)
+            vim.keymap.set('n', '<leader>rh', ':RustLsp hover actions<CR>', opts)
+            vim.keymap.set('n', '<leader>ra', ':RustLsp codeAction<CR>', opts)
+          end,
+        },
+      }
+    end,
+  },
+
+  -- Cargo.toml support
+  {
+    'saecki/crates.nvim',
+    event = { 'BufRead Cargo.toml' },
+    config = function()
+      require('crates').setup({
+        completion = {
+          cmp = {
+            enabled = true,
+          },
+        },
+      })
+    end,
+  },
+
   -- Debugging support
   {
     'mfussenegger/nvim-dap',
@@ -381,6 +453,7 @@ require('lazy').setup({
       })
       require('nvim-dap-virtual-text').setup()
 
+      -- C/C++ debugging
       dap.adapters.cppdbg = {
         id = 'cppdbg',
         type = 'executable',
@@ -407,6 +480,27 @@ require('lazy').setup({
         },
       }
       dap.configurations.c = dap.configurations.cpp
+
+      -- Rust debugging
+      dap.adapters.lldb = {
+        type = 'executable',
+        command = '/usr/bin/lldb-vscode',
+        name = 'lldb',
+      }
+
+      dap.configurations.rust = {
+        {
+          name = 'Launch',
+          type = 'lldb',
+          request = 'launch',
+          program = function()
+            return vim.fn.input('Path to executable: ', vim.fn.getcwd() .. '/target/debug/', 'file')
+          end,
+          cwd = '${workspaceFolder}',
+          stopOnEntry = false,
+          args = {},
+        },
+      }
 
       dap.listeners.after.event_initialized['dapui_config'] = function()
         dapui.open()
@@ -477,5 +571,3 @@ require('lazy').setup({
     end,
   },
 })
-
-
