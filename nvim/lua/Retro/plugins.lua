@@ -112,7 +112,7 @@ require('lazy').setup({
     build = ':TSUpdate',
     config = function()
       require('nvim-treesitter.configs').setup({
-        ensure_installed = { 'c', 'cpp', 'cmake', 'make', 'lua', 'vim', 'glsl', 'json', 'yaml', 'rust', 'toml' },
+        ensure_installed = { 'c', 'cpp', 'cmake', 'make', 'lua', 'vim', 'glsl', 'json', 'yaml', 'rust', 'toml', 'gdscript' },
         auto_install = true,
         highlight = {
           enable = true,
@@ -216,10 +216,25 @@ require('lazy').setup({
         },
       })
 
+      -- Godot LSP Configuration
+      vim.lsp.config('gdscript', {
+        capabilities = capabilities,
+        cmd = { 'nc', 'localhost', '6005' },  -- Use 6008 for Godot 4
+        filetypes = { 'gd', 'gdscript', 'gdscript3' },
+        root_markers = { 'project.godot', '.git' },
+        on_attach = function(client, bufnr)
+          local opts = { buffer = bufnr, noremap = true, silent = true }
+          vim.keymap.set('n', '<leader>gr', ':GodotRun<CR>', opts)
+          vim.keymap.set('n', '<leader>gd', ':GodotRunLast<CR>', opts)
+          vim.keymap.set('n', '<leader>gs', ':GodotRunCurrent<CR>', opts)
+        end,
+      })
+
       vim.lsp.enable('clangd')
       vim.lsp.enable('cmake')
       vim.lsp.enable('lua_ls')
       vim.lsp.enable('rust_analyzer')
+      vim.lsp.enable('gdscript')
     end,
   },
 
@@ -420,6 +435,20 @@ require('lazy').setup({
           cmp = {
             enabled = true,
           },
+        },
+      })
+    end,
+  },
+
+  -- Godot support
+  {
+    'habamax/vim-godot',
+    ft = { 'gdscript' },
+    config = function()
+      -- Set up file type detection
+      vim.filetype.add({
+        extension = {
+          gd = 'gdscript',
         },
       })
     end,
